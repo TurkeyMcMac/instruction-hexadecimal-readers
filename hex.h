@@ -2,6 +2,7 @@
 #define HEX_INCLUDED
 
 #include <stdio.h>
+#include <limits.h>
 
 typedef   signed char HEX_S8;
 typedef unsigned char HEX_U8;
@@ -9,13 +10,13 @@ typedef unsigned char HEX_U8;
 typedef   signed short HEX_S16;
 typedef unsigned short HEX_U16;
 
-#if INT_MAX == 4294967295 /* int is 32 bits */
-typedef   signed int HEX_S32;
-typedef unsigned int HEX_U32;
-#else
+#if INT_MAX == SHORT_MAX /* int is 16 bits */
 typedef   signed long HEX_S32;
 typedef unsigned long HEX_U32;
-#endif /* int is 32 bits */
+#else
+typedef   signed int HEX_S32;
+typedef unsigned int HEX_U32;
+#endif /* int is 16 bits */
 
 #define HEXT_I8		0
 #define HEXT_I16	1
