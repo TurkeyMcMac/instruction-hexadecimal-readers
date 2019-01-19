@@ -23,6 +23,19 @@ static int valid_type(const struct hex_reader *reader, HEX_U8 type)
 	return type <= 5;
 }
 
+static int invalid_hex_error(const char *pair)
+{
+	switch (pair[0]) {
+	case '\n':
+		return -HEXE_INVALID_SIZE;
+	case '\r':
+		if (pair[1] == '\n') return -HEXE_INVALID_SIZE;
+		/* FALLTHROUGH */
+	default:
+		return -HEXE_NOT_HEX;
+	}
+}
+
 static int read_data(struct hex_record *rec, const char *hex)
 {
 	HEX_U8 i;
@@ -41,8 +54,11 @@ static int read_data(struct hex_record *rec, const char *hex)
 	}
 	if ((int)rec->size < min_size) return -HEXE_INVALID_SIZE;
 	for (i = 0; i < rec->size; ++i) {
-		int byte = read_u8(hex + i * 2);
-		if (byte < 0) return -HEXE_NOT_HEX;
+		const char *pair = hex + i * 2;
+		int byte = read_u8(pair);
+		if (byte < 0) {
+			return invalid_hex_error(pair);
+		}
 		rec->data.data[i] = byte;
 	}
 	return 0;
@@ -138,7 +154,7 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 	if (err < 0) return err;
 	READ(from, 2, buf, return -HEXE_UNEXPECTED_EOF);
 	checksum = read_u8(buf);
-	if (checksum < 0) return -HEXE_NOT_HEX;
+	if (checksum < 0) return invalid_hex_error(buf);
 	if (checksum != calc_checksum(rec)) return -HEXE_INVALID_CHECKSUM;
 	READ(from, 1, buf, return
 		rec->type == HEXR_END_OF_FILE ? 0 : -HEXE_UNEXPECTED_EOF);
