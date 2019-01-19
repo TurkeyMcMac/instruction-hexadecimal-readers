@@ -4,19 +4,15 @@
 #include <stdio.h>
 #include <limits.h>
 
-typedef   signed char HEX_S8;
 typedef unsigned char HEX_U8;
-
-typedef   signed short HEX_S16;
 typedef unsigned short HEX_U16;
-
+typedef unsigned
 #if INT_MAX == SHORT_MAX /* int is 16 bits */
-typedef   signed long HEX_S32;
-typedef unsigned long HEX_U32;
+	long
 #else
-typedef   signed int HEX_S32;
-typedef unsigned int HEX_U32;
+	short
 #endif /* int is 16 bits */
+HEX_U32;
 
 #define HEXT_I8		0
 #define HEXT_I16	1
