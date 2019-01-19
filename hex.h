@@ -52,8 +52,6 @@ struct hex_record {
 
 int hex_read(int type, FILE *from, struct hex_record *rec);
 
-int hex_write(int type, FILE *into, const struct hex_record *rec);
-
 const char *hex_errstr(int errnum);
 
 #endif /* HEX_INCLUDED */

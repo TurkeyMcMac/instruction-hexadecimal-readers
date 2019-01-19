@@ -186,11 +186,6 @@ finish:
 	return 0;
 }
 
-int hex_write(int type, FILE *into, const struct hex_record *rec)
-{
-	return 0;
-}
-
 const char *hex_errstr(int code)
 {
 	if (code < 0) code *= -1;
