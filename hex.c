@@ -15,7 +15,19 @@ static int read_u8(const char hex[2])
 
 static int valid_type(const struct hex_reader *reader, HEX_U8 type)
 {
-	return type <= 5;
+	switch (type) {
+	case HEXR_DATA:
+	case HEXR_END_OF_FILE:
+		return 1;
+	case HEXR_EXT_SEG_ADDR:
+	case HEXR_START_SEG_ADDR:
+		return reader->type == HEXT_I16;
+	case HEXR_EXT_LIN_ADDR:
+	case HEXR_START_LIN_ADDR:
+		return reader->type == HEXT_I32;
+	default:
+		return 0;
+	}
 }
 
 static int invalid_hex_error(const char *pair)
