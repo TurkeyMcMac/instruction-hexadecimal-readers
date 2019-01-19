@@ -217,7 +217,7 @@ const char *hex_errstr(int code)
 	case HEXE_MISSING_EOF:
 		return "Expected end-of-file";
 	case HEXE_NOT_HEX:
-		return "Character is not a hexidecimal digit";
+		return "Character pair is not a hexidecimal digit pair";
 	case HEXE_UNEXPECTED_EOF:
 		return "Unexpected end-of-file";
 	case HEXE_IO_ERROR:
