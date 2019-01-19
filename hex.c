@@ -166,9 +166,10 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 	READ(from, 2, buf, return -HEXE_UNEXPECTED_EOF);
 	checksum = read_u8(buf);
 	if (checksum < 0) return invalid_hex_error(buf);
-	if (checksum != calc_checksum(rec)) return -HEXE_INVALID_CHECKSUM;
-	READ(from, 1, buf, return
-		rec->type == HEXR_END_OF_FILE ? 0 : -HEXE_UNEXPECTED_EOF);
+	READ(from, 1, buf,
+		if (rec->type == HEXR_END_OF_FILE) goto finish;
+		return -HEXE_UNEXPECTED_EOF;
+	);
 	switch (buf[0]) {
 	case '\n':
 		break;
@@ -179,17 +180,20 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 		}
 		break;
 	default:
-		return -HEXE_EXPECTED_EOL;
+		return -HEXE_INVALID_SIZE;
 	}
-	++from->line;
 	if (is_at_end(from->source)) {
 		if (rec->type != HEXR_END_OF_FILE) {
 			return -HEXE_UNEXPECTED_EOF;
 		}
 	} else if (rec->type == HEXR_END_OF_FILE) {
+		++from->line;
 		return -HEXE_MISSING_EOF;
 	}
+finish:
+	if (checksum != calc_checksum(rec)) return -HEXE_INVALID_CHECKSUM;
 	unionize_data(rec);
+	++from->line;
 	return 0;
 }
 
