@@ -63,4 +63,6 @@ int hex_read(struct hex_reader *from, struct hex_record *rec);
 
 int hex_write(FILE *into, const struct hex_record *rec);
 
+const char *hex_errstr(int errnum);
+
 #endif /* HEX_INCLUDED */

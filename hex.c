@@ -155,3 +155,32 @@ int hex_write(FILE *into, const struct hex_record *rec)
 {
 	return 0;
 }
+
+const char *hex_errstr(int code)
+{
+	if (code < 0) code *= -1;
+	switch (code) {
+	case 0:
+		return "Success";
+	case HEXE_EXPECTED_EOL:
+		return "Expected line ending";
+	case HEXE_INVALID_CHECKSUM:
+		return "Stored checksum does not match computed checksum";
+	case HEXE_INVALID_SIZE:
+		return "Invalid byte count for record";
+	case HEXE_INVALID_TYPE:
+		return "Invalid record type";
+	case HEXE_MISSING_COLON:
+		return "Expected ':' to begin a record";
+	case HEXE_MISSING_EOF:
+		return "Expected end-of-file";
+	case HEXE_NOT_HEX:
+		return "Character is not a hexidecimal digit";
+	case HEXE_UNEXPECTED_EOF:
+		return "Unexpected end-of-file";
+	case HEXE_IO_ERROR:
+		return "I/O error";
+	default:
+		return "Uknown error";
+	}
+}
