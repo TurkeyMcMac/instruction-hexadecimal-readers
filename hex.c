@@ -122,21 +122,6 @@ static HEX_U8 calc_checksum(const struct hex_record *rec)
 		} \
 	}
 
-int is_at_end(FILE *file)
-{
-	long pos, end;
-	if (feof(file)) return 1;
-	pos = ftell(file);
-	fseek(file, 0, SEEK_END);
-	end = ftell(file);
-	if (pos == end) {
-		return 1;
-	} else {
-		fseek(file, pos, SEEK_SET);
-		return 0;
-	}
-}
-
 int hex_read(struct hex_reader *from, struct hex_record *rec)
 {
 	int err;
@@ -182,13 +167,19 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 	default:
 		return -HEXE_INVALID_SIZE;
 	}
-	if (is_at_end(from->source)) {
-		if (rec->type != HEXR_END_OF_FILE) {
-			return -HEXE_UNEXPECTED_EOF;
+	if (fread(buf, 1, 1, from->source) != 1) {
+		if (feof(from->source)) {
+			if (rec->type != HEXR_END_OF_FILE) {
+				return -HEXE_UNEXPECTED_EOF;
+			}
+		} else {
+			return -HEXE_IO_ERROR;
 		}
 	} else if (rec->type == HEXR_END_OF_FILE) {
 		++from->line;
 		return -HEXE_MISSING_EOF;
+	} else {
+		ungetc(buf[0], from->source);
 	}
 finish:
 	if (checksum != calc_checksum(rec)) return -HEXE_INVALID_CHECKSUM;
