@@ -13,7 +13,7 @@ static int read_u8(const char hex[2])
 	return (read_nibble(hex[0]) << 4) | read_nibble(hex[1]);
 }
 
-static int valid_type(const struct hex_reader *reader, HEX_U8 type)
+static int valid_type(int file_type, HEX_U8 type)
 {
 	switch (type) {
 	case HEXR_DATA:
@@ -21,10 +21,10 @@ static int valid_type(const struct hex_reader *reader, HEX_U8 type)
 		return 1;
 	case HEXR_EXT_SEG_ADDR:
 	case HEXR_START_SEG_ADDR:
-		return reader->type == HEXT_I16;
+		return file_type == HEXT_I16;
 	case HEXR_EXT_LIN_ADDR:
 	case HEXR_START_LIN_ADDR:
-		return reader->type == HEXT_I32;
+		return file_type == HEXT_I32;
 	default:
 		return 0;
 	}
@@ -114,15 +114,15 @@ static HEX_U8 calc_checksum(const struct hex_record *rec)
 }
 
 #define READ(from, size, buf, on_eof) \
-	if (fread((buf), 1, (size), (from)->source) != (size)) { \
-		if (feof((from)->source)) { \
+	if (fread((buf), 1, (size), (from)) != (size)) { \
+		if (feof((from))) { \
 			on_eof; \
 		} else { \
 			return -HEXE_IO_ERROR; \
 		} \
 	}
 
-int hex_read(struct hex_reader *from, struct hex_record *rec)
+int hex_read(int file_type, FILE *from, struct hex_record *rec)
 {
 	int err;
 	char buf[512];
@@ -144,7 +144,7 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 	type = read_u8(buf);
 	rec->type = type;
 	if (type < 0) return -HEXE_NOT_HEX;
-	if (!valid_type(from, type)) return -HEXE_INVALID_TYPE;
+	if (!valid_type(file_type, type)) return -HEXE_INVALID_TYPE;
 	READ(from, size * 2, buf, return -HEXE_INVALID_SIZE);
 	err = read_data(rec, buf);
 	if (err < 0) return err;
@@ -167,8 +167,8 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 	default:
 		return -HEXE_INVALID_SIZE;
 	}
-	if (fread(buf, 1, 1, from->source) != 1) {
-		if (feof(from->source)) {
+	if (fread(buf, 1, 1, from) != 1) {
+		if (feof(from)) {
 			if (rec->type != HEXR_END_OF_FILE) {
 				return -HEXE_UNEXPECTED_EOF;
 			}
@@ -176,19 +176,17 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 			return -HEXE_IO_ERROR;
 		}
 	} else if (rec->type == HEXR_END_OF_FILE) {
-		++from->line;
 		return -HEXE_MISSING_EOF;
 	} else {
-		ungetc(buf[0], from->source);
+		ungetc(buf[0], from);
 	}
 finish:
 	if (checksum != calc_checksum(rec)) return -HEXE_INVALID_CHECKSUM;
 	unionize_data(rec);
-	++from->line;
 	return 0;
 }
 
-int hex_write(FILE *into, const struct hex_record *rec)
+int hex_write(int type, FILE *into, const struct hex_record *rec)
 {
 	return 0;
 }

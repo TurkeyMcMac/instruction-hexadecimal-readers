@@ -28,12 +28,6 @@ HEX_U32;
 #define HEXE_UNEXPECTED_EOF	8
 #define HEXE_IO_ERROR		9
 
-struct hex_reader {
-	FILE *source;
-	int line;
-	int type;
-};
-
 #define HEXR_DATA		0x00
 #define HEXR_END_OF_FILE	0x01
 #define HEXR_EXT_SEG_ADDR	0x02
@@ -56,9 +50,9 @@ struct hex_record {
 	} data;
 };
 
-int hex_read(struct hex_reader *from, struct hex_record *rec);
+int hex_read(int type, FILE *from, struct hex_record *rec);
 
-int hex_write(FILE *into, const struct hex_record *rec);
+int hex_write(int type, FILE *into, const struct hex_record *rec);
 
 const char *hex_errstr(int errnum);
 
