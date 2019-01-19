@@ -1,4 +1,4 @@
-#include "hex.h"
+#include "ihr.h"
 #include <ctype.h>
 
 static int read_nibble(char hex)
