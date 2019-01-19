@@ -96,7 +96,8 @@ static HEX_U8 calc_checksum(const struct hex_record *rec)
 	HEX_U8 checksum = 0;
 	HEX_U8 i = 0;
 	checksum += rec->size;
-	checksum += rec->addr;
+	checksum += rec->addr >> 8;
+	checksum += rec->addr & 0xFF;
 	checksum += rec->type;
 	for (i = 0; i < rec->size; ++i) {
 		checksum += rec->data.data[i];
