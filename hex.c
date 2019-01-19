@@ -13,11 +13,6 @@ static int read_u8(const char hex[2])
 	return (read_nibble(hex[0]) << 4) | read_nibble(hex[1]);
 }
 
-static int read_u16(const char hex[4])
-{
-	return (read_u8(hex) << 8) | read_u8(hex + 2);
-}
-
 static int valid_type(const struct hex_reader *reader, HEX_U8 type)
 {
 	return type <= 5;
@@ -142,9 +137,12 @@ int hex_read(struct hex_reader *from, struct hex_record *rec)
 	rec->size = size;
 	if (size < 0) return -HEXE_NOT_HEX;
 	READ(from, 4, buf, return -HEXE_UNEXPECTED_EOF);
-	addr = read_u16(buf);
-	rec->addr = addr;
+	addr = read_u8(buf);
 	if (addr < 0) return -HEXE_NOT_HEX;
+	rec->addr = addr << 8;
+	addr = read_u8(buf + 2);
+	if (addr < 0) return -HEXE_NOT_HEX;
+	rec->addr |= addr;
 	READ(from, 2, buf, return -HEXE_UNEXPECTED_EOF);
 	type = read_u8(buf);
 	rec->type = type;
