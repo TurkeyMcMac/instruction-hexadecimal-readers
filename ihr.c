@@ -68,7 +68,7 @@ static int read_data(struct ihr_record *rec, const char *hex)
 		}
 		rec->data.data[i] = byte;
 	}
-	return 0;
+	return i;
 }
 
 static void unionize_data(struct ihr_record *rec)
@@ -113,77 +113,85 @@ static IHR_U8 calc_checksum(const struct ihr_record *rec)
 	return checksum;
 }
 
-#define READ(from, size, buf, on_eof) \
-	if (fread((buf), 1, (size), (from)) != (size)) { \
-		if (feof((from))) { \
-			on_eof; \
-		} else { \
-			return -IHRE_IO_ERROR; \
-		} \
-	}
-
-int ihr_read(int file_type, FILE *from, struct ihr_record *rec)
+int ihr_read(int file_type,
+	size_t len,
+	const char *text,
+	struct ihr_record *rec)
 {
-	int err;
-	char buf[512];
+	int idx = 0;
 	int size, addr, type, checksum;
-	READ(from, 1, buf, return -IHRE_UNEXPECTED_EOF);
-	if (buf[0] != ':') return -IHRE_MISSING_COLON;
-	READ(from, 2, buf, return -IHRE_UNEXPECTED_EOF);
-	size = read_u8(buf);
+	if (len < IHR_MIN_LENGTH) {
+		rec->type = -IHRE_SUB_MIN_LENGTH;
+		goto error;
+	}
+	if (text[idx] != ':') {
+		rec->type = -IHRE_MISSING_COLON;
+		goto error;
+	}
+	idx += 1;
+	size = read_u8(text + idx);
+	if (size < 0) goto error_not_hex;
 	rec->size = size;
-	if (size < 0) return -IHRE_NOT_HEX;
-	READ(from, 4, buf, return -IHRE_UNEXPECTED_EOF);
-	addr = read_u8(buf);
-	if (addr < 0) return -IHRE_NOT_HEX;
+	idx += 2;
+	addr = read_u8(text + idx);
+	if (addr < 0) goto error_not_hex;
 	rec->addr = addr << 8;
-	addr = read_u8(buf + 2);
-	if (addr < 0) return -IHRE_NOT_HEX;
+	idx += 2;
+	addr = read_u8(text + idx);
+	if (addr < 0) goto error_not_hex;
 	rec->addr |= addr;
-	READ(from, 2, buf, return -IHRE_UNEXPECTED_EOF);
-	type = read_u8(buf);
+	idx += 2;
+	type = read_u8(text + idx);
+	if (type < 0) goto error_not_hex;
 	rec->type = type;
-	if (type < 0) return -IHRE_NOT_HEX;
-	if (!valid_type(file_type, type)) return -IHRE_INVALID_TYPE;
-	READ(from, size * 2, buf, return -IHRE_INVALID_SIZE);
-	err = read_data(rec, buf);
-	if (err < 0) return err;
-	READ(from, 2, buf, return -IHRE_UNEXPECTED_EOF);
-	checksum = read_u8(buf);
-	if (checksum < 0) return invalid_hex_error(buf);
-	READ(from, 1, buf,
-		if (rec->type == IHRR_END_OF_FILE) goto finish;
-		return -IHRE_UNEXPECTED_EOF;
-	);
-	switch (buf[0]) {
-	case '\n':
-		break;
-	case '\r':
-		READ(from, 1, buf, return -IHRE_EXPECTED_EOL);
-		if (buf[0] != '\n') {
-			return -IHRE_EXPECTED_EOL;
-		}
-		break;
-	default:
-		return -IHRE_INVALID_SIZE;
+	if (!valid_type(file_type, type)) {
+		rec->type = -IHRE_INVALID_TYPE;
+		goto error;
 	}
-	if (fread(buf, 1, 1, from) != 1) {
-		if (feof(from)) {
-			if (rec->type != IHRR_END_OF_FILE) {
-				return -IHRE_UNEXPECTED_EOF;
+	idx += 2;
+	if (len < idx + (size + 1) * 2) goto error_invalid_size;
+	if ((size = read_data(rec, text + idx)) < 0) goto error;
+	idx += size * 2;
+	checksum = read_u8(text + idx);
+	if (checksum < 0) {
+		rec->type = invalid_hex_error(text + idx);
+		goto error;
+	}
+	if (checksum != calc_checksum(rec)) {
+		rec->type = -IHRE_INVALID_CHECKSUM;
+		goto error;
+	}
+	idx += 2;
+	if (idx < len) {
+		switch (text[idx]) {
+		case '\n':
+			break;
+		case '\r':
+			++idx;
+			if (idx >= len || text[idx] != '\n') {
+				--idx;
+				rec->type = -IHRE_EXPECTED_EOL;
+				goto error;
 			}
-		} else {
-			return -IHRE_IO_ERROR;
+			break;
+		default:
+			goto error_invalid_size;
 		}
-	} else if (rec->type == IHRR_END_OF_FILE) {
-		return -IHRE_MISSING_EOF;
-	} else {
-		ungetc(buf[0], from);
+		++idx;
 	}
-finish:
-	if (checksum != calc_checksum(rec)) return -IHRE_INVALID_CHECKSUM;
 	unionize_data(rec);
-	return 0;
+	return idx;
+
+error_invalid_size:
+	rec->type = -IHRE_INVALID_SIZE;
+	return ~1;
+
+error_not_hex:
+	rec->type = -IHRE_NOT_HEX;
+	return ~idx;
+
+error:
+	return ~idx;
 }
 
 const char *ihr_errstr(int code)
@@ -208,8 +216,8 @@ const char *ihr_errstr(int code)
 		return "Character pair is not a hexidecimal digit pair";
 	case IHRE_UNEXPECTED_EOF:
 		return "Unexpected end-of-file";
-	case IHRE_IO_ERROR:
-		return "I/O error";
+	case IHRE_SUB_MIN_LENGTH:
+		return "Record text below minimum possible size";
 	default:
 		return "Uknown error";
 	}

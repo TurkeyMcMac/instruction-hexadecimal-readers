@@ -1,7 +1,7 @@
 #ifndef IHR_INCLUDED
 #define IHR_INCLUDED
 
-#include <stdio.h>
+#include <stddef.h>
 #include <limits.h>
 
 typedef unsigned char IHR_U8;
@@ -26,7 +26,7 @@ IHR_U32;
 #define IHRE_MISSING_EOF	6
 #define IHRE_NOT_HEX		7
 #define IHRE_UNEXPECTED_EOF	8
-#define IHRE_IO_ERROR		9
+#define IHRE_SUB_MIN_LENGTH	9
 
 #define IHRR_DATA		0x00
 #define IHRR_END_OF_FILE	0x01
@@ -35,8 +35,11 @@ IHR_U32;
 #define IHRR_EXT_LIN_ADDR	0x04
 #define IHRR_START_LIN_ADDR	0x05
 
+#define IHR_MIN_LENGTH 11
+#define IHR_MAX_LENGTH 525
+
 struct ihr_record {
-	IHR_U8 type;
+	char type;
 	IHR_U8 size;
 	IHR_U16 addr;
 	union {
@@ -50,8 +53,11 @@ struct ihr_record {
 	} data;
 };
 
-int ihr_read(int type, FILE *from, struct ihr_record *rec);
+int ihr_read(int file_type,
+	size_t len,
+	const char *text,
+	struct ihr_record *rec);
 
-const char *ihr_errstr(int errnum);
+const char *ihr_errstr(int code);
 
 #endif /* IHR_INCLUDED */
