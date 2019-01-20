@@ -118,7 +118,7 @@ int ihr_read(int file_type,
 	const char *text,
 	struct ihr_record *rec)
 {
-	int idx = 0;
+	size_t idx = 0;
 	int size, addr, type, checksum;
 	if (len < IHR_MIN_LENGTH) {
 		rec->type = -IHRE_SUB_MIN_LENGTH;
