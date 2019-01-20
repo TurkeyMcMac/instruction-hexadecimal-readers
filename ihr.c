@@ -1,11 +1,11 @@
 #include "ihr.h"
-#include <ctype.h>
 
 static int read_nibble(char hex)
 {
-	int d = digittoint(hex);
-	if (d == 0 && hex != '0') d = -1;
-	return d;
+	if ('0' <= hex && hex <= '9') return hex - '0';
+	hex |= 0x20;
+	if ('a' <= hex && hex <= 'f') return 10 + hex - 'a';
+	return -1;
 }
 
 static int read_u8(const char hex[2])
