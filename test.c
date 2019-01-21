@@ -16,12 +16,8 @@ const char *errstr(int code)
 		return "Invalid record type";
 	case IHRE_MISSING_COLON:
 		return "Expected ':' to begin a record";
-	case IHRE_MISSING_EOF:
-		return "Expected end-of-file";
 	case IHRE_NOT_HEX:
 		return "Character pair is not a hexidecimal digit pair";
-	case IHRE_UNEXPECTED_EOF:
-		return "Unexpected end-of-file";
 	case IHRE_SUB_MIN_LENGTH:
 		return "Record text below minimum possible size";
 	default:
