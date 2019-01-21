@@ -1,6 +1,29 @@
 # intel-hex-reader
 A small C library for reading Intel HEX files.
 
+## Example
+```c
+FILE *file = fopen("example.hex", "r");
+char buf[255]; /* 255 is the maximum record length. */
+int reclen;
+struct ihr_record rec;
+size_t size;
+char *line;
+do {
+	line = fgetln(file, &size); /* This is valid until next call. */
+	/* The buffer is filled if the record has type 0 (data): */
+	rec.data.data = buf;
+	/* Read the line as an I8HEX record: */
+	if ((reclen = ihr_read(IHRT_I8, size, line, &rec)) < 0) {
+		/* ~reclen is the column; -rec.type is the error code: */
+		do_error(&rec, ~reclen);
+	} else {
+		use_record(&rec);
+	}
+} while (rec.type != IHRR_END_OF_FILE);
+fclose(file);
+```
+
 ## Intel HEX Format
 This format is for storing programs as text using hexidecimal bytes. You can
 read all about it [here](https://en.wikipedia.org/wiki/Intel_HEX).
