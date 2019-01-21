@@ -22,6 +22,14 @@ static void next_line(struct ihr_record *rec)
 	++idx;
 	read_or_die(IHRT_I16, strlen(line), line, rec, idx);
 }
+static void next_line_invalid_type(struct ihr_record *rec)
+{
+	const char *line = lines[idx];
+	int len;
+	++idx;
+	read_or_live(IHRT_I16, strlen(line), line, rec, idx,
+		IHRE_INVALID_TYPE);
+}
 
 int main(void)
 {
@@ -31,13 +39,10 @@ int main(void)
 		rec.data.data = buf;
 		next_line(&rec);
 	} while (idx < 8);
-	rec.data.data = buf;
-	ihr_read(IHRT_I16, strlen(lines[8]), lines[8], &rec);
-	assert(rec.type == -IHRE_INVALID_TYPE);
-	rec.data.data = buf;
-	ihr_read(IHRT_I16, strlen(lines[9]), lines[9], &rec);
-	assert(rec.type == -IHRE_INVALID_TYPE);
-	rec.data.data = buf;
+	do {
+		rec.data.data = buf;
+		next_line_invalid_type(&rec);
+	} while (idx < 10);
 	ihr_read(IHRT_I16, strlen(lines[10]), lines[10], &rec);
 	assert(rec.type == IHRR_END_OF_FILE);
 }

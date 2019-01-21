@@ -29,14 +29,7 @@ static void next_line_invalid_type(struct ihr_record *rec)
 	const char *line = lines[idx];
 	int len;
 	++idx;
-	ihr_read(IHRT_I8, strlen(line), line, rec);
-	if (rec->type != -IHRE_INVALID_TYPE) {
-		if (rec->type > 0)
-			fprintf(stderr, "Not invalid type: %d\n", rec->type);
-		else
-			fprintf(stderr, "Not invalid type: %s\n", errstr(rec->type));
-		exit(EXIT_FAILURE);
-	}
+	read_or_live(IHRT_I8, strlen(line), line, rec, idx, IHRE_INVALID_TYPE);
 }
 
 int main(void)

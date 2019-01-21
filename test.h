@@ -46,3 +46,23 @@ static int read_or_die(int type,
 	}
 	return len;
 }
+
+static int read_or_live(int type,
+	size_t line_len,
+	const char *text,
+	struct ihr_record *rec,
+	int line,
+	int expected_err)
+{
+	int len = ihr_read(type, line_len, text, rec);
+	if (rec->type != -expected_err) {
+		fprintf(stderr, "NOT EXPECTED %s (line %d, column %d): ",
+			errstr(expected_err), line, -len);
+		if (rec->type > 0)
+			fprintf(stderr, "%d\n", rec->type);
+		else
+			fprintf(stderr, "%s\n", errstr(rec->type));
+		exit(EXIT_FAILURE);
+	}
+	return len;
+}
