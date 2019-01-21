@@ -11,6 +11,8 @@ static const char *const lines[] = {
 	":10C23000F04AF054BCF5204830592D02E018BB03F9",
 	":020000020000FC",
 	":04000000FA00000200",
+	":02000004FFFFFC", /* Invalid type for I16. */
+	":04000005000000CD2A", /* Ditto */
 	":00000001FF"
 };
 static void next_line(struct ihr_record *rec)
@@ -28,5 +30,14 @@ int main(void)
 	do {
 		rec.data.data = buf;
 		next_line(&rec);
-	} while (rec.type != IHRR_END_OF_FILE);
+	} while (idx < 8);
+	rec.data.data = buf;
+	ihr_read(IHRT_I16, strlen(lines[8]), lines[8], &rec);
+	assert(rec.type == -IHRE_INVALID_TYPE);
+	rec.data.data = buf;
+	ihr_read(IHRT_I16, strlen(lines[9]), lines[9], &rec);
+	assert(rec.type == -IHRE_INVALID_TYPE);
+	rec.data.data = buf;
+	ihr_read(IHRT_I16, strlen(lines[10]), lines[10], &rec);
+	assert(rec.type == IHRR_END_OF_FILE);
 }

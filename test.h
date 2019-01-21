@@ -1,6 +1,7 @@
 #include "ihr.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 static const char *errstr(int code)
 {
