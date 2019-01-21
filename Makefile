@@ -3,6 +3,8 @@ source = ihr.c
 object = ihr.o
 
 test-header = test.h
+test-source = test.c
+test-object = test.o
 tests = $(patsubst %.c, %.o, $(wildcard tests/*.c))
 
 all: $(object)
@@ -13,11 +15,14 @@ ihr.o: $(source) $(header)
 tests: $(tests)
 	./run-tests
 
-tests/%.o: tests/%.c $(object) $(test-header)
-	$(CC) $(CFLAGS) -c -o $@ $< && $(CC) -o $@ $@ $(object)
+tests/%.o: tests/%.c $(object) $(test-object)
+	$(CC) $(CFLAGS) -c -o $@ $< && $(CC) -o $@ $@ $(object) $(test-object)
+
+$(test-object): $(test-source) $(test-header)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	$(RM) ihr.o tests/*.o
+	$(RM) $(object) $(test-object) $(tests)
 
 
 .PHONY: all tests clean
