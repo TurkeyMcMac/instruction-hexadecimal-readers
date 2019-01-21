@@ -53,8 +53,8 @@ int read_or_live(int type,
 {
 	int len = ihr_read(type, line_len, text, rec);
 	if (rec->type != -expected_err) {
-		fprintf(stderr, "NOT EXPECTED %s (line %d, column %d): ",
-			errstr(expected_err), line, -len);
+		fprintf(stderr, "line %d, column %d: EXPECTED %s, GOT ",
+			line, len < 0 ? -len : len + 1, errstr(expected_err));
 		if (rec->type > 0)
 			fprintf(stderr, "%d\n", rec->type);
 		else
