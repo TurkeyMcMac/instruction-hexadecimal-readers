@@ -58,6 +58,4 @@ int ihr_read(int file_type,
 	const char *text,
 	struct ihr_record *rec);
 
-const char *ihr_errstr(int code);
-
 #endif /* IHR_INCLUDED */
