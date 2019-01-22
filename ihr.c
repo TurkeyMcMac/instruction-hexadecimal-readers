@@ -43,7 +43,7 @@ static int invalid_hex_error(const char *pair)
 	}
 }
 
-static int read_data(struct ihr_record *rec, const char *hex)
+static int read_data(struct ihr_record *rec, const char *hex, size_t *idx)
 {
 	IHR_U8 i;
 	int min_size;
@@ -59,16 +59,23 @@ static int read_data(struct ihr_record *rec, const char *hex)
 		default:
 			min_size = -1;
 	}
-	if ((int)rec->size < min_size) return -IHRE_INVALID_SIZE;
+	if ((int)rec->size < min_size) {
+		rec->type = -IHRE_INVALID_SIZE;
+		*idx = 1;
+		return -1;
+	}
 	for (i = 0; i < rec->size; ++i) {
 		const char *pair = hex + i * 2;
 		int byte = read_u8(pair);
 		if (byte < 0) {
-			return invalid_hex_error(pair);
+			rec->type = invalid_hex_error(pair);
+			*idx += i * 2;
+			return -1;
 		}
 		rec->data.data[i] = byte;
 	}
-	return i;
+	*idx += i * 2;
+	return 0;
 }
 
 static void unionize_data(struct ihr_record *rec)
@@ -150,8 +157,7 @@ int ihr_read(int file_type,
 	}
 	idx += 2;
 	if (len < idx + (size + 1) * 2) goto error_invalid_size;
-	if ((size = read_data(rec, text + idx)) < 0) goto error;
-	idx += size * 2;
+	if (read_data(rec, text + idx, &idx) < 0) goto error;
 	checksum = read_u8(text + idx);
 	if (checksum < 0) {
 		rec->type = invalid_hex_error(text + idx);
