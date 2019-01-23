@@ -163,10 +163,6 @@ int ihr_read(int file_type,
 		rec->type = invalid_hex_error(text + idx);
 		goto error;
 	}
-	if (checksum != calc_checksum(rec)) {
-		rec->type = -IHRE_INVALID_CHECKSUM;
-		goto error;
-	}
 	idx += 2;
 	if (idx < len) {
 		switch (text[idx]) {
@@ -184,6 +180,10 @@ int ihr_read(int file_type,
 			goto error_invalid_size;
 		}
 		++idx;
+	}
+	if (checksum != calc_checksum(rec)) {
+		rec->type = -IHRE_INVALID_CHECKSUM;
+		goto error;
 	}
 	unionize_data(rec);
 	return idx;
