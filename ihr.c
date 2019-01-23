@@ -172,12 +172,14 @@ int ihr_read(int file_type,
 			++idx;
 			if (idx >= len || text[idx] != '\n') {
 				--idx;
-				rec->type = -IHRE_EXPECTED_EOL;
-				goto error;
+				goto error_expected_eol;
 			}
 			break;
 		default:
-			goto error_invalid_size;
+			if (size < 255)
+				goto error_invalid_size;
+			else
+				goto error_expected_eol;
 		}
 		++idx;
 	}
@@ -194,6 +196,10 @@ error_invalid_size:
 
 error_not_hex:
 	rec->type = -IHRE_NOT_HEX;
+	return ~idx;
+
+error_expected_eol:
+	rec->type = -IHRE_EXPECTED_EOL;
 	return ~idx;
 
 error:
