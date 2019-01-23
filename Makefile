@@ -16,7 +16,9 @@ tests: $(tests)
 	./run-tests
 
 tests/%.o: tests/%.c $(object) $(test-object)
-	$(CC) $(CFLAGS) -c -o $@ $< && $(CC) -o $@ $@ $(object) $(test-object)
+	$(CC) $(CFLAGS) -c -o $@.tmp $< \
+	&& $(CC) -o $@ $@.tmp $(object) $(test-object) \
+	&& $(RM) $@.tmp
 
 $(test-object): $(test-source) $(test-header)
 	$(CC) $(CFLAGS) -c -o $@ $<
