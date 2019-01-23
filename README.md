@@ -101,7 +101,7 @@ record. If it is negative, `~line` (not `-`, but `~`) indicates the erroneous
 part of the text. On error, the `type` of the record is set to a negated error
 value. No other data can be read from the record. Here are possible errors with
 their descriptions:
- * `IHRE_EXPECTED_EOL`: Record ends with `\r` not followed by `\n`.
+ * `IHRE_EXPECTED_EOL`: Record does not end with `\n` or `\r\n`.
  * `IHRE_INVALID_CHECKSUM`: The checksum of the record did not match its
    computed checksum.
  * `IHRE_INVALID_SIZE`: The byte count of the record was not correct.
