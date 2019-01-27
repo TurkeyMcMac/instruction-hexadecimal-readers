@@ -1,5 +1,7 @@
 #include "ihr.h"
 
+/* Convert a hex digit to its integer form, or -1 if the given is not hex.
+ * TODO: Do we need to accept lowercase hex? */
 static int read_nibble(char hex)
 {
 	if ('0' <= hex && hex <= '9') return hex - '0';
@@ -8,11 +10,13 @@ static int read_nibble(char hex)
 	return -1;
 }
 
+/* Convert two hex digits to an unsigned byte, or -1 if a digit was invalid. */
 static int read_u8(const char hex[2])
 {
 	return (read_nibble(hex[0]) << 4) | read_nibble(hex[1]);
 }
 
+/* Returns 1 if the type is valid for the given file type or 0 otherwise. */
 static int valid_type(int file_type, IHR_U8 type)
 {
 	switch (type) {
@@ -30,6 +34,9 @@ static int valid_type(int file_type, IHR_U8 type)
 	}
 }
 
+/* Choose an error code to suit a pair of unparseable digits. Returns
+ * -IHRE_INVALID_SIZE if the pair was a line break (the record was shorter than
+ * indicated,) or -IHRE_NOT_HEX otherwise. */
 static int invalid_hex_error(const char *pair)
 {
 	switch (pair[0]) {
@@ -152,6 +159,8 @@ int ihr_read(int file_type,
 	}
 	/* Verify checksum: */
 	{
+		/* The checksum is the two's complement of the least significant
+		 * byte of the sum of all preceding bytes. */
 		IHR_U8 right_cksum = 0;
 		IHR_U8 i = 0;
 		right_cksum += rec->size;
@@ -195,17 +204,21 @@ int ihr_read(int file_type,
 	return idx;
 
 error_invalid_size:
+	/* The reported size of the record was incorrect. */
 	rec->type = -IHRE_INVALID_SIZE;
 	return ~1;
 
 error_not_hex:
+	/* A character which should have been a hex digit was not. */
 	rec->type = -IHRE_NOT_HEX;
 	return ~idx;
 
 error_expected_eol:
+	/* The record should have been ended by a line break already. */
 	rec->type = -IHRE_EXPECTED_EOL;
 	return ~idx;
 
 error:
+	/* Any other error. */
 	return ~idx;
 }
