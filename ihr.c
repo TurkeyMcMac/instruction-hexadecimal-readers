@@ -5,7 +5,7 @@
 static int read_nibble(char hex)
 {
 	if ('0' <= hex && hex <= '9') return hex - '0';
-	hex |= 0x20;
+	hex |= 0x20; /* Normalize to lowercase */
 	if ('a' <= hex && hex <= 'f') return 10 + hex - 'a';
 	return -1;
 }
