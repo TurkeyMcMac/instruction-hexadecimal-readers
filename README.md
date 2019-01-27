@@ -4,7 +4,7 @@ A small C library for reading Intel HEX files.
 ## Example
 ```c
 FILE *file = fopen("example.hex", "r");
-char buf[255]; /* 255 is the maximum record length. */
+char buf[IHR_MAX_SIZE];
 int reclen;
 struct ihr_record rec;
 size_t size;
@@ -46,8 +46,8 @@ This function reads text-encoded data from `text`, which is assumed to be of
 length `len`. No string terminator is necessary.
 
 Before you call the function, you **must** set `rec->data.data` to a buffer at
-least 255 bytes in width (the maximum data entry length.) `rec` points to a
-structure with this format:
+least `IHR_MAX_SIZE` bytes in width (the maximum data entry length.) `rec`
+points to a structure with this format:
 ```c
 struct ihr_record {
 	char type;

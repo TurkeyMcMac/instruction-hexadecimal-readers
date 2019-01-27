@@ -35,7 +35,7 @@ static void next_line_invalid_type(struct ihr_record *rec)
 int main(void)
 {
 	struct ihr_record rec;
-	IHR_U8 buf[255];
+	IHR_U8 buf[IHR_MAX_SIZE];
 	do {
 		rec.data.data = buf;
 		next_line(&rec);

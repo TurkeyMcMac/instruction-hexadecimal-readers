@@ -36,6 +36,8 @@ IHR_U32;
 #define IHR_MIN_LENGTH 11
 #define IHR_MAX_LENGTH 525
 
+#define IHR_MAX_SIZE 255
+
 struct ihr_record {
 	char type;
 	IHR_U8 size;

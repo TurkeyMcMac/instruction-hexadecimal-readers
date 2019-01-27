@@ -150,7 +150,7 @@ int ihr_read(int file_type,
 			}
 			break;
 		default:
-			if (rec->size < 255)
+			if (rec->size < IHR_MAX_SIZE)
 				goto error_invalid_size;
 			else
 				goto error_expected_eol;
