@@ -117,7 +117,7 @@ static IHR_U8 calc_checksum(const struct ihr_record *rec)
 		checksum += rec->data.data[i];
 	}
 	checksum = ~checksum + 1;
-	return checksum;
+	return checksum & 0xFF;
 }
 
 int ihr_read(int file_type,
