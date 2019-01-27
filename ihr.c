@@ -50,42 +50,50 @@ int ihr_read(int file_type,
 	struct ihr_record *rec)
 {
 	size_t idx = 0;
-	int size, addr, type, read_cksum;
+	int read_cksum;
+	/* Check that the given text can be a valid record: */
 	if (len < IHR_MIN_LENGTH) {
 		rec->type = -IHRE_SUB_MIN_LENGTH;
 		goto error;
 	}
+	/* Check for record beginning colon: */
 	if (text[idx] != ':') {
 		rec->type = -IHRE_MISSING_COLON;
 		goto error;
+	} else {
+		idx += 1;
 	}
-	idx += 1;
-	size = read_u8(text + idx);
-	if (size < 0) goto error_not_hex;
-	rec->size = size;
-	idx += 2;
-	addr = read_u8(text + idx);
-	if (addr < 0) goto error_not_hex;
-	rec->addr = addr << 8;
-	idx += 2;
-	addr = read_u8(text + idx);
-	if (addr < 0) goto error_not_hex;
-	rec->addr |= addr;
-	idx += 2;
-	type = read_u8(text + idx);
-	if (type < 0) goto error_not_hex;
-	rec->type = type;
-	if (!valid_type(file_type, type)) {
-		rec->type = -IHRE_INVALID_TYPE;
-		goto error;
+	/* Read in fields at record beginning (size, address, type): */
+	{
+		int size, addr, type;
+		size = read_u8(text + idx);
+		if (size < 0) goto error_not_hex;
+		rec->size = size;
+		idx += 2;
+		addr = read_u8(text + idx);
+		if (addr < 0) goto error_not_hex;
+		rec->addr = addr << 8;
+		idx += 2;
+		addr = read_u8(text + idx);
+		if (addr < 0) goto error_not_hex;
+		rec->addr |= addr;
+		idx += 2;
+		type = read_u8(text + idx);
+		if (type < 0) goto error_not_hex;
+		rec->type = type;
+		if (!valid_type(file_type, type)) {
+			rec->type = -IHRE_INVALID_TYPE;
+			goto error;
+		}
+		idx += 2;
 	}
-	idx += 2;
-	if (len < idx + (size + 1) * 2) goto error_invalid_size;
 	/* Read data field: */
 	{
 		IHR_U8 i;
 		int min_size;
 		const char *hex;
+		if (len < idx + ((size_t)rec->size + 1) * 2)
+			goto error_invalid_size;
 		switch (rec->type) {
 			case IHRR_EXT_SEG_ADDR:
 			case IHRR_EXT_LIN_ADDR:
@@ -115,12 +123,14 @@ int ihr_read(int file_type,
 		}
 		idx += (size_t)i * 2;
 	}
-	read_cksum = read_u8(text + idx);
-	if (read_cksum < 0) {
+	/* Read in the checksum (verification comes later): */
+	if ((read_cksum = read_u8(text + idx)) < 0) {
 		rec->type = invalid_hex_error(text + idx);
 		goto error;
+	} else {
+		idx += 2;
 	}
-	idx += 2;
+	/* Make sure we've reached the end of the line/record: */
 	if (idx < len) {
 		switch (text[idx]) {
 		case '\n':
@@ -133,7 +143,7 @@ int ihr_read(int file_type,
 			}
 			break;
 		default:
-			if (size < 255)
+			if (rec->size < 255)
 				goto error_invalid_size;
 			else
 				goto error_expected_eol;
