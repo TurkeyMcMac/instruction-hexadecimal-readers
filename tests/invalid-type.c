@@ -49,5 +49,5 @@ int main(void)
 	} while (idx < 10);
 	rec.data.data = buf;
 	ihr_read(IHRT_I8, strlen(lines[10]), lines[10], &rec);
-	assert(rec.type == IHRR_END_OF_FILE);
+	assert(rec.type == IHRR_I_END_OF_FILE);
 }

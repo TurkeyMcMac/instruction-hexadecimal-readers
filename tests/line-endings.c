@@ -29,7 +29,7 @@ static void next_line_invalid_type(struct ihr_record *rec)
 	const char *line = lines[idx];
 	int len;
 	++idx;
-	read_or_live(IHRT_I8, strlen(line), line, rec, idx, IHRE_MISSING_COLON);
+	read_or_live(IHRT_I8, strlen(line), line, rec, idx, IHRE_MISSING_START);
 }
 
 int main(void)
@@ -46,5 +46,5 @@ int main(void)
 	} while (idx < 10);
 	rec.data.data = buf;
 	ihr_read(IHRT_I8, strlen(lines[10]), lines[10], &rec);
-	assert(rec.type == IHRR_END_OF_FILE);
+	assert(rec.type == IHRR_I_END_OF_FILE);
 }

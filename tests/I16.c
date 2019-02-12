@@ -44,5 +44,5 @@ int main(void)
 		next_line_invalid_type(&rec);
 	} while (idx < 10);
 	ihr_read(IHRT_I16, strlen(lines[10]), lines[10], &rec);
-	assert(rec.type == IHRR_END_OF_FILE);
+	assert(rec.type == IHRR_I_END_OF_FILE);
 }

@@ -16,14 +16,14 @@ static int read_u8(const char hex[2])
 static int valid_type(int file_type, IHR_U8 type)
 {
 	switch (type) {
-	case IHRR_DATA:
-	case IHRR_END_OF_FILE:
+	case IHRR_I_DATA:
+	case IHRR_I_END_OF_FILE:
 		return 1;
-	case IHRR_EXT_SEG_ADDR:
-	case IHRR_START_SEG_ADDR:
+	case IHRR_I_EXT_SEG_ADDR:
+	case IHRR_I_START_SEG_ADDR:
 		return file_type == IHRT_I16;
-	case IHRR_EXT_LIN_ADDR:
-	case IHRR_START_LIN_ADDR:
+	case IHRR_I_EXT_LIN_ADDR:
+	case IHRR_I_START_LIN_ADDR:
 		return file_type == IHRT_I32;
 	default:
 		return 0;
@@ -48,12 +48,12 @@ static int read_data(struct ihr_record *rec, const char *hex, size_t *idx)
 	IHR_U8 i;
 	int min_size;
 	switch (rec->type) {
-		case IHRR_EXT_SEG_ADDR:
-		case IHRR_EXT_LIN_ADDR:
+		case IHRR_I_EXT_SEG_ADDR:
+		case IHRR_I_EXT_LIN_ADDR:
 			min_size = 2;
 			break;
-		case IHRR_START_SEG_ADDR:
-		case IHRR_START_LIN_ADDR:
+		case IHRR_I_START_SEG_ADDR:
+		case IHRR_I_START_LIN_ADDR:
 			min_size = 4;
 			break;
 		default:
@@ -82,21 +82,21 @@ static void unionize_data(struct ihr_record *rec)
 {
 	IHR_U8 *data = rec->data.data;
 	switch (rec->type) {
-	case IHRR_DATA:
-	case IHRR_END_OF_FILE:
+	case IHRR_I_DATA:
+	case IHRR_I_END_OF_FILE:
 		break;
-	case IHRR_EXT_SEG_ADDR:
-	case IHRR_EXT_LIN_ADDR:
+	case IHRR_I_EXT_SEG_ADDR:
+	case IHRR_I_EXT_LIN_ADDR:
 		rec->data.base_addr = ((IHR_U16)data[0] << 8)
 			| (IHR_U16)data[1];
 		break;
-	case IHRR_START_SEG_ADDR:
+	case IHRR_I_START_SEG_ADDR:
 		rec->data.start.code_seg = ((IHR_U16)data[0] << 8)
 			| (IHR_U16)data[1];
 		rec->data.start.instr_ptr = ((IHR_U16)data[2] << 8)
 			| (IHR_U16)data[3];
 		break;
-	case IHRR_START_LIN_ADDR:
+	case IHRR_I_START_LIN_ADDR:
 		rec->data.ext_instr_ptr = ((IHR_U32)data[0] << 24)
 			| ((IHR_U32)data[1] << 16) | ((IHR_U32)data[2] << 8)
 			| (IHR_U32)data[3];
@@ -132,7 +132,7 @@ int ihr_read(int file_type,
 		goto error;
 	}
 	if (text[idx] != ':') {
-		rec->type = -IHRE_MISSING_COLON;
+		rec->type = -IHRE_MISSING_START;
 		goto error;
 	}
 	idx += 1;

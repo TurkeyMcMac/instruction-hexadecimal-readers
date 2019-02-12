@@ -14,7 +14,7 @@ const char *errstr(int code)
 		return "Invalid byte count for record";
 	case IHRE_INVALID_TYPE:
 		return "Invalid record type";
-	case IHRE_MISSING_COLON:
+	case IHRE_MISSING_START:
 		return "Expected ':' to begin a record";
 	case IHRE_NOT_HEX:
 		return "Character pair is not a hexidecimal digit pair";
