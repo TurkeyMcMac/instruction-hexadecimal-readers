@@ -17,7 +17,7 @@ static int read_u8(const char hex[2])
 }
 
 /* Returns 1 if the type is valid for the given file type or 0 otherwise. */
-static int valid_type(int file_type, IHR_U8 type)
+static int ihex_valid_type(int file_type, IHR_U8 type)
 {
 	switch (type) {
 	case IHRR_I_DATA:
@@ -29,6 +29,28 @@ static int valid_type(int file_type, IHR_U8 type)
 	case IHRR_I_EXT_LIN_ADDR:
 	case IHRR_I_START_LIN_ADDR:
 		return file_type == IHRT_I32;
+	default:
+		return 0;
+	}
+}
+
+/* Returns 1 if the type is valid for the given file type or 0 otherwise. */
+static int srec_valid_type(int file_type, IHR_U8 type)
+{
+	switch (type) {
+	case IHRR_S0_HEADER:
+	case IHRR_S5_COUNT_16:
+	case IHRR_S6_COUNT_24:
+		return 1;
+	case IHRR_S1_DATA_16:
+	case IHRR_S9_START_16:
+		return file_type == IHRT_S19;
+	case IHRR_S2_DATA_24:
+	case IHRR_S8_START_24:
+		return file_type == IHRT_S28;
+	case IHRR_S3_DATA_32:
+	case IHRR_S7_START_32:
+		return file_type == IHRT_S37;
 	default:
 		return 0;
 	}
@@ -50,15 +72,16 @@ static int invalid_hex_error(const char *pair)
 	}
 }
 
-int ihr_read(int file_type,
+static int ihex_read(int file_type,
 	size_t len,
 	const char *text,
 	struct ihr_record *rec)
 {
+
 	size_t idx = 0;
 	int read_cksum;
 	/* Check that the given text can be a valid record: */
-	if (len < IHR_MIN_LENGTH) {
+	if (len < IHR_I_MIN_LENGTH) {
 		rec->type = -IHRE_SUB_MIN_LENGTH;
 		goto error;
 	}
@@ -87,7 +110,7 @@ int ihr_read(int file_type,
 		type = read_u8(text + idx);
 		if (type < 0) goto error_not_hex;
 		rec->type = type;
-		if (!valid_type(file_type, type)) {
+		if (!ihex_valid_type(file_type, type)) {
 			rec->type = -IHRE_INVALID_TYPE;
 			goto error;
 		}
@@ -220,4 +243,31 @@ error_expected_eol:
 error:
 	/* Any other error. */
 	return ~idx;
+}
+
+int srec_read(int file_type,
+	size_t len,
+	const char *text,
+	struct ihr_record *rec)
+{
+	/* TODO: implement */
+	return -1;
+}
+
+int ihr_read(int file_type,
+	size_t len,
+	const char *text,
+	struct ihr_record *rec)
+{
+	switch (file_type) {
+	case IHRT_I8:
+	case IHRT_I16:
+	case IHRT_I32:
+		return ihex_read(file_type, len, text, rec);
+	case IHRT_S19:
+	case IHRT_S28:
+	case IHRT_S37:
+		return srec_read(file_type, len, text, rec);
+	}
+	return -1; /* It is undefined behavior to reach here. */
 }

@@ -48,7 +48,8 @@ IHR_U32;
 #define IHRR_S8_START_24	0x8
 #define IHRR_S9_START_16	0x9
 
-#define IHR_MIN_LENGTH 11
+#define IHR_I_MIN_LENGTH 11
+#define IHR_S_MIN_LENGTH 10
 #define IHR_MAX_LENGTH 525
 
 #define IHR_MAX_SIZE 255
