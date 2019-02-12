@@ -29,6 +29,7 @@ IHR_U32;
 #define IHRE_NOT_HEX		7
 #define IHRE_SUB_MIN_LENGTH	9
 
+/* Intel HEX record types */
 #define IHRR_I_DATA		0x00
 #define IHRR_I_END_OF_FILE	0x01
 #define IHRR_I_EXT_SEG_ADDR	0x02
@@ -36,21 +37,38 @@ IHR_U32;
 #define IHRR_I_EXT_LIN_ADDR	0x04
 #define IHRR_I_START_LIN_ADDR	0x05
 
+/* Motorola SREC record types */
+#define IHRR_S0_HEADER		0x0
+#define IHRR_S1_DATA_16		0x1
+#define IHRR_S2_DATA_24		0x2
+#define IHRR_S3_DATA_32		0x3
+#define IHRR_S5_COUNT_16	0x5
+#define IHRR_S6_COUNT_24	0x6
+#define IHRR_S7_START_32	0x7
+#define IHRR_S8_START_24	0x8
+#define IHRR_S9_START_16	0x9
+
 #define IHR_MIN_LENGTH 11
 #define IHR_MAX_LENGTH 525
 
 struct ihr_record {
 	char type;
 	IHR_U8 size;
-	IHR_U16 addr;
+	IHR_U32 addr;
 	union {
 		IHR_U8 *data;
-		IHR_U16 base_addr;
-		IHR_U32 ext_instr_ptr;
-		struct {
-			IHR_U16 code_seg;
-			IHR_U16 instr_ptr;
-		} start;
+		union {
+			IHR_U16 base_addr;
+			IHR_U32 ext_instr_ptr;
+			struct {
+				IHR_U16 code_seg;
+				IHR_U16 instr_ptr;
+			} start;
+		} ihex;
+		union {
+			IHR_U32 start;
+			IHR_U32 count;
+		} srec;
 	} data;
 };
 

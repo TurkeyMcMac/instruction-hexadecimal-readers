@@ -87,17 +87,17 @@ static void unionize_data(struct ihr_record *rec)
 		break;
 	case IHRR_I_EXT_SEG_ADDR:
 	case IHRR_I_EXT_LIN_ADDR:
-		rec->data.base_addr = ((IHR_U16)data[0] << 8)
+		rec->data.ihex.base_addr = ((IHR_U16)data[0] << 8)
 			| (IHR_U16)data[1];
 		break;
 	case IHRR_I_START_SEG_ADDR:
-		rec->data.start.code_seg = ((IHR_U16)data[0] << 8)
+		rec->data.ihex.start.code_seg = ((IHR_U16)data[0] << 8)
 			| (IHR_U16)data[1];
-		rec->data.start.instr_ptr = ((IHR_U16)data[2] << 8)
+		rec->data.ihex.start.instr_ptr = ((IHR_U16)data[2] << 8)
 			| (IHR_U16)data[3];
 		break;
 	case IHRR_I_START_LIN_ADDR:
-		rec->data.ext_instr_ptr = ((IHR_U32)data[0] << 24)
+		rec->data.ihex.ext_instr_ptr = ((IHR_U32)data[0] << 24)
 			| ((IHR_U32)data[1] << 16) | ((IHR_U32)data[2] << 8)
 			| (IHR_U32)data[3];
 		break;
