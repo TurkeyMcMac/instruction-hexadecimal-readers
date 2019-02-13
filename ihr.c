@@ -297,7 +297,7 @@ int srec_read(int file_type,
 	}
 	/* Read in fields at record beginning (type, size, address): */
 	{
-		int size, addr, type;
+		int i, size, type;
 		type = read_nibble(text[idx]);
 		if (type < 0) goto error_not_hex;
 		rec->type = type;
@@ -314,29 +314,12 @@ int srec_read(int file_type,
 		rec->size = size;
 		idx += 2;
 		rec->addr = 0;
-		switch (addr_size) {
-		case 4:
-			addr = read_u8(text + idx);
+		for (i = 0; i < addr_size; ++i) {
+			int addr = read_u8(text + idx);
 			if (addr < 0) goto error_not_hex;
-			rec->addr |= addr << 24;
 			idx += 2;
-			/* FALLTHROUGH */
-		case 3:
-			addr = read_u8(text + idx);
-			if (addr < 0) goto error_not_hex;
-			rec->addr |= addr << 16;
-			idx += 2;
-			/* FALLTHROUGH */
-		case 2:
-			addr = read_u8(text + idx);
-			if (addr < 0) goto error_not_hex;
-			rec->addr |= addr << 8;
-			idx += 2;
-			addr = read_u8(text + idx);
-			if (addr < 0) goto error_not_hex;
 			rec->addr |= addr;
-			idx += 2;
-			break;
+			rec->addr <<= 8;
 		}
 	}
 	/* Read data field: */
