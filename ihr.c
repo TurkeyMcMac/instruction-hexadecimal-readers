@@ -146,7 +146,10 @@ static int ihex_read(int file_type,
 		const char *hex;
 		if (len < idx + ((size_t)rec->size + 1) * 2)
 			goto error_invalid_size;
-		switch (rec->type) {
+		if (rec->type == IHRR_I_END_OF_FILE) {
+			if (rec->size != 0) goto error_invalid_size;
+		} else {
+			switch (rec->type) {
 			case IHRR_I_EXT_SEG_ADDR:
 			case IHRR_I_EXT_LIN_ADDR:
 				min_size = 2;
@@ -157,23 +160,25 @@ static int ihex_read(int file_type,
 				break;
 			default:
 				min_size = -1;
-		}
-		if ((int)rec->size < min_size) {
-			rec->type = -IHRE_INVALID_SIZE;
-			goto error_invalid_size;
-		}
-		hex = text + idx;
-		for (i = 0; i < rec->size; ++i) {
-			const char *pair = hex + i * 2;
-			int byte = read_u8(pair);
-			if (byte < 0) {
-				rec->type = invalid_hex_error(pair);
-				idx += i * 2;
-				goto error;
+				break;
 			}
-			rec->data.data[i] = byte;
+			if ((int)rec->size < min_size) {
+				rec->type = -IHRE_INVALID_SIZE;
+				goto error_invalid_size;
+			}
+			hex = text + idx;
+			for (i = 0; i < rec->size; ++i) {
+				const char *pair = hex + i * 2;
+				int byte = read_u8(pair);
+				if (byte < 0) {
+					rec->type = invalid_hex_error(pair);
+					idx += i * 2;
+					goto error;
+				}
+				rec->data.data[i] = byte;
+			}
+			idx += (size_t)i * 2;
 		}
-		idx += (size_t)i * 2;
 	}
 	/* Read in the checksum (verification comes later): */
 	if ((read_cksum = read_u8(text + idx)) < 0) {
