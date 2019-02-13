@@ -72,6 +72,35 @@ static int invalid_hex_error(const char *pair)
 	}
 }
 
+static int find_line_end(const char *text,
+	size_t len,
+	size_t *idx,
+	struct ihr_record *rec)
+{
+	if (*idx < len) {
+		switch (text[*idx]) {
+		case '\n':
+			break;
+		case '\r':
+			++*idx;
+			if (*idx >= len || text[*idx] != '\n') {
+				--*idx;
+				rec->type = -IHRE_EXPECTED_EOL;
+				return 0;
+			}
+			break;
+		default:
+			if (rec->size < IHR_MAX_SIZE)
+				rec->type = -IHRE_INVALID_SIZE;
+			else
+				rec->type = -IHRE_EXPECTED_EOL;
+			return 0;
+		}
+		++*idx;
+	}
+	return 1;
+}
+
 static int ihex_read(int file_type,
 	size_t len,
 	const char *text,
@@ -158,26 +187,7 @@ static int ihex_read(int file_type,
 	} else {
 		idx += 2;
 	}
-	/* Make sure we've reached the end of the line/record: */
-	if (idx < len) {
-		switch (text[idx]) {
-		case '\n':
-			break;
-		case '\r':
-			++idx;
-			if (idx >= len || text[idx] != '\n') {
-				--idx;
-				goto error_expected_eol;
-			}
-			break;
-		default:
-			if (rec->size < IHR_MAX_SIZE)
-				goto error_invalid_size;
-			else
-				goto error_expected_eol;
-		}
-		++idx;
-	}
+	if (!find_line_end(text, len, &idx, rec)) goto error;
 	/* Verify checksum: */
 	{
 		/* The checksum is the two's complement of the least significant
@@ -232,11 +242,6 @@ error_invalid_size:
 error_not_hex:
 	/* A character which should have been a hex digit was not. */
 	rec->type = -IHRE_NOT_HEX;
-	return ~idx;
-
-error_expected_eol:
-	/* The record should have been ended by a line break already. */
-	rec->type = -IHRE_EXPECTED_EOL;
 	return ~idx;
 
 error:
@@ -363,26 +368,7 @@ int srec_read(int file_type,
 	} else {
 		idx += 2;
 	}
-	/* Make sure we've reached the end of the line/record: */
-	if (idx < len) {
-		switch (text[idx]) {
-		case '\n':
-			break;
-		case '\r':
-			++idx;
-			if (idx >= len || text[idx] != '\n') {
-				--idx;
-				goto error_expected_eol;
-			}
-			break;
-		default:
-			if (rec->size < IHR_MAX_SIZE)
-				goto error_invalid_size;
-			else
-				goto error_expected_eol;
-		}
-		++idx;
-	}
+	if (!find_line_end(text, len, &idx, rec)) goto error;
 	/* Verify checksum: */
 	{
 		/* The checksum is the one's complement of the least significant
@@ -433,11 +419,6 @@ error_invalid_size:
 error_not_hex:
 	/* A character which should have been a hex digit was not. */
 	rec->type = -IHRE_NOT_HEX;
-	return ~idx;
-
-error_expected_eol:
-	/* The record should have been ended by a line break already. */
-	rec->type = -IHRE_EXPECTED_EOL;
 	return ~idx;
 
 error:
