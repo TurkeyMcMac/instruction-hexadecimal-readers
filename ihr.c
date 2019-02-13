@@ -62,11 +62,9 @@ static int srec_valid_type(int file_type, IHR_U8 type)
 static int invalid_hex_error(const char *pair)
 {
 	switch (pair[0]) {
+	case '\r':
 	case '\n':
 		return -IHRE_INVALID_SIZE;
-	case '\r':
-		if (pair[1] == '\n') return -IHRE_INVALID_SIZE;
-		/* FALLTHROUGH */
 	default:
 		return -IHRE_NOT_HEX;
 	}
@@ -83,11 +81,8 @@ static int find_line_end(const char *text,
 			break;
 		case '\r':
 			++*idx;
-			if (*idx >= len || text[*idx] != '\n') {
+			if (*idx >= len || text[*idx] != '\n')
 				--*idx;
-				rec->type = -IHRE_EXPECTED_EOL;
-				return 0;
-			}
 			break;
 		default:
 			if (rec->size < IHR_MAX_SIZE)
