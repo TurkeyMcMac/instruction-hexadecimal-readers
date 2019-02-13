@@ -45,5 +45,5 @@ int main(void)
 	rec.data.data = buf;
 	ihr_read(IHRT_S19, strlen(lines[8]), lines[8], &rec);
 	assert(rec.type == IHRR_S9_START_16);
-	assert(rec.data.srec.start == 0);
+	assert(rec.addr == 0);
 }

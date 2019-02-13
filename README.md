@@ -1,5 +1,12 @@
-# intel-hex-reader
-A small C library for reading Intel HEX files.
+# instruction-hexadecimal-readers
+A small C library for reading Intel HEX, Motorola SREC, and possibly more in the
+future.
+
+## Formats
+All these formats are for storing programs as text using hexidecimal bytes. You
+can read all about them on Wikipedia:
+ * [Intel HEX](https://en.wikipedia.org/wiki/Intel_HEX)
+ * [Motorola SREC](https://en.wikipedia.org/wiki/SREC_(file_format))
 
 ## Example
 ```c
@@ -23,10 +30,6 @@ do {
 } while (rec.type != IHRR_END_OF_FILE);
 fclose(file);
 ```
-
-## Intel HEX Format
-This format is for storing programs as text using hexidecimal bytes. You can
-read all about it [here](https://en.wikipedia.org/wiki/Intel_HEX).
 
 ## Usage
 To use this library, you can probably just copy the header file into some header
@@ -52,15 +55,17 @@ points to a structure with this format:
 struct ihr_record {
 	char type;
 	IHR_U8 size;
-	IHR_U16 addr;
+	IHR_U32 addr;
 	union {
 		IHR_U8 *data;
-		IHR_U16 base_addr;
-		IHR_U32 ext_instr_ptr;
-		struct {
-			IHR_U16 code_seg;
-			IHR_U16 instr_ptr;
-		} start;
+			union {
+			IHR_U16 base_addr;
+			IHR_U32 ext_instr_ptr;
+			struct {
+				IHR_U16 code_seg;
+				IHR_U16 instr_ptr;
+			} start;
+		} ihex;
 	} data;
 };
 ```
@@ -81,19 +86,23 @@ Wikipedia link from the introduction, but here is a summary of the fields:
    * `data` is just raw bytes. This field is associated with the Data record
      type. The library does no allocation, which is why you must set this to an
      empty buffer beforehand.
-   * `base_addr` is associated with either one of the Extended Segment Address
-     or Extended Linear Address types. The meaning of the address is different,
-     but the data can be stored the same way.
-   * `ext_instr_ptr` corresponds with the Start Linear Address type.
-   * `start` corresponds with the Start Segment Address type. Its `code_seg`
-      field is the start of the code segment, while its `instr_ptr` field is the
-      initial instruction pointer position.
+   * `ihex` contains options specific to Intel HEX:
+     * `base_addr` is associated with either one of the Extended Segment Address
+       or Extended Linear Address types. The meaning of the address is
+       different, but the data can be stored the same way.
+     * `ext_instr_ptr` corresponds with the Start Linear Address type.
+     * `start` corresponds with the Start Segment Address type. Its `code_seg`
+       field is the start of the code segment, while its `instr_ptr` field is
+       the initial instruction pointer position.
 
 The `file_type` field describes the subset of the format to use. The subset
 restricts which field types are valid.
  * `IHRT_I8` is I8HEX
  * `IHRT_I16` is I32HEX
  * `IHRT_I32` is I32HEX
+ * `IHRT_S19` is SREC S19
+ * `IHRT_S28` is SREC S28
+ * `IHRT_S37` is SREC S37
 
 The return value of the function is positive on success or negative on error. If
 it is positive, it indicates how much of the text was read as part of the

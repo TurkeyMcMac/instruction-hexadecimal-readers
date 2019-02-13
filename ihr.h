@@ -68,10 +68,6 @@ struct ihr_record {
 				IHR_U16 instr_ptr;
 			} start;
 		} ihex;
-		union {
-			IHR_U32 start;
-			IHR_U32 count;
-		} srec;
 	} data;
 };
 

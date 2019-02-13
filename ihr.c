@@ -390,25 +390,6 @@ int srec_read(int file_type,
 			goto error;
 		}
 	}
-	/* Transfer data from rec->addr to record-type-specific fields: */
-	{
-		switch (rec->type) {
-		case IHRR_S0_HEADER:
-		case IHRR_S1_DATA_16:
-		case IHRR_S2_DATA_24:
-		case IHRR_S3_DATA_32:
-			break;
-		case IHRR_S5_COUNT_16:
-		case IHRR_S6_COUNT_24:
-			rec->data.srec.count = rec->addr;
-			break;
-		case IHRR_S7_START_32:
-		case IHRR_S8_START_24:
-		case IHRR_S9_START_16:
-			rec->data.srec.start = rec->addr;
-			break;
-		}
-	}
 	return idx;
 
 error_invalid_size:
