@@ -12,10 +12,10 @@ all: $(object)
 ihr.o: $(source) $(header)
 	$(CC) -O3 -ansi -Wall -Wextra -Wpedantic $(CFLAGS) -c -o $@ $<
 
-tests: $(tests)
+tests: $(object) $(tests)
 	./run-tests
 
-tests/%.o: tests/%.c $(object) $(test-object)
+tests/%.o: tests/%.c $(header) $(test-object)
 	$(CC) $(CFLAGS) -c -o $@.tmp $< \
 	&& $(CC) -o $@ $@.tmp $(object) $(test-object) \
 	&& $(RM) $@.tmp
