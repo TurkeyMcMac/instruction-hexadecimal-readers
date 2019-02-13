@@ -27,7 +27,7 @@ do {
 	} else {
 		use_record(&rec);
 	}
-} while (rec.type != IHRR_END_OF_FILE);
+} while (rec.type != IHRR_I_END_OF_FILE);
 fclose(file);
 ```
 
