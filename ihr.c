@@ -96,6 +96,26 @@ static int find_line_end(const char *text,
 	return 1;
 }
 
+static int read_data(const char *text, size_t *idx, struct ihr_record *rec)
+{
+	int status = 0; /* Success */
+	const char *hex = text + *idx;
+	IHR_U8 i;
+	for (i = 0; i < rec->size; ++i) {
+		const char *pair = hex + i * 2;
+		int byte = read_u8(pair);
+		if (byte < 0) {
+			rec->type = invalid_hex_error(pair);
+			status = -1; /* Failure */
+			goto finish;
+		}
+		rec->data.data[i] = byte;
+	}
+finish:
+	*idx += (size_t)i * 2;
+	return status;
+}
+
 static int ihex_read(int file_type,
 	size_t len,
 	const char *text,
@@ -141,9 +161,7 @@ static int ihex_read(int file_type,
 	}
 	/* Read data field: */
 	{
-		IHR_U8 i;
 		int min_size;
-		const char *hex;
 		if (len < idx + ((size_t)rec->size + 1) * 2)
 			goto error_invalid_size;
 		if (rec->type == IHRR_I_END_OF_FILE) {
@@ -166,18 +184,7 @@ static int ihex_read(int file_type,
 				rec->type = -IHRE_INVALID_SIZE;
 				goto error_invalid_size;
 			}
-			hex = text + idx;
-			for (i = 0; i < rec->size; ++i) {
-				const char *pair = hex + i * 2;
-				int byte = read_u8(pair);
-				if (byte < 0) {
-					rec->type = invalid_hex_error(pair);
-					idx += i * 2;
-					goto error;
-				}
-				rec->data.data[i] = byte;
-			}
-			idx += (size_t)i * 2;
+			if (read_data(text, &idx, rec)) goto error;
 		}
 	}
 	/* Read in the checksum (verification comes later): */
@@ -334,8 +341,6 @@ int srec_read(int file_type,
 	}
 	/* Read data field: */
 	{
-		IHR_U8 i;
-		const char *hex;
 		switch (rec->type) {
 		case IHRR_S0_HEADER:
 		case IHRR_S1_DATA_16:
@@ -343,18 +348,7 @@ int srec_read(int file_type,
 		case IHRR_S3_DATA_32:
 			if (len < idx + ((size_t)rec->size + 1) * 2)
 				goto error_invalid_size;
-			hex = text + idx;
-			for (i = 0; i < rec->size; ++i) {
-				const char *pair = hex + i * 2;
-				int byte = read_u8(pair);
-				if (byte < 0) {
-					rec->type = invalid_hex_error(pair);
-					idx += i * 2;
-					goto error;
-				}
-				rec->data.data[i] = byte;
-			}
-			idx += (size_t)i * 2;
+			if (read_data(text, &idx, rec)) goto error;
 			break;
 		default:
 			if (rec->size != 0) goto error_invalid_size;
