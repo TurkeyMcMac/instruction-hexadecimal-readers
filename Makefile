@@ -12,8 +12,8 @@ all: $(object)
 ihr.o: $(source) $(header)
 	$(CC) -O3 -ansi -Wall -Wextra -Wpedantic $(CFLAGS) -c -o $@ $<
 
-tests: $(object) $(tests)
-	./run-tests
+run-tests: $(object) $(tests)
+	sh run-tests.sh
 
 tests/%.o: tests/%.c $(header) $(test-object)
 	$(CC) $(CFLAGS) -c -o $@.tmp $< \
@@ -27,4 +27,4 @@ clean:
 	$(RM) $(object) $(test-object) $(tests)
 
 
-.PHONY: all tests clean
+.PHONY: all run-tests clean

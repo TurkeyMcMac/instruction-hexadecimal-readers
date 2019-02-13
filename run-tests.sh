@@ -1,5 +1,3 @@
-#!/bin/sh
-
 testdir=tests
 
 is_tty() {
