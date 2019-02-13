@@ -77,7 +77,6 @@ static int ihex_read(int file_type,
 	const char *text,
 	struct ihr_record *rec)
 {
-
 	size_t idx = 0;
 	int read_cksum;
 	/* Check that the given text can be a valid record: */
@@ -245,13 +244,201 @@ error:
 	return ~idx;
 }
 
+IHR_U8 srec_addr_size(IHR_U8 type)
+{
+	switch (type) {
+	case IHRR_S0_HEADER:
+	case IHRR_S1_DATA_16:
+	case IHRR_S5_COUNT_16:
+	case IHRR_S9_START_16:
+		return 2;
+	case IHRR_S2_DATA_24:
+	case IHRR_S6_COUNT_24:
+	case IHRR_S8_START_24:
+		return 3;
+	case IHRR_S3_DATA_32:
+	case IHRR_S7_START_32:
+		return 4;
+	}
+	return 2;
+}
+
 int srec_read(int file_type,
 	size_t len,
 	const char *text,
 	struct ihr_record *rec)
 {
-	/* TODO: implement */
-	return -1;
+	size_t idx = 0;
+	int read_cksum;
+	/* Check that the given text can be a valid record: */
+	if (len < IHR_S_MIN_LENGTH) {
+		rec->type = -IHRE_SUB_MIN_LENGTH;
+		goto error;
+	}
+	/* Check for record beginning S: */
+	if (text[idx] != 'S') {
+		rec->type = -IHRE_MISSING_START;
+		goto error;
+	} else {
+		idx += 1;
+	}
+	/* Read in fields at record beginning (type, size, address): */
+	{
+		int size, addr, type;
+		type = read_nibble(text[idx]);
+		if (type < 0) goto error_not_hex;
+		rec->type = type;
+		if (!srec_valid_type(file_type, type)) {
+			rec->type = -IHRE_INVALID_TYPE;
+			goto error;
+		}
+		idx += 1;
+		size = read_u8(text + idx);
+		if (size < 0) goto error_not_hex;
+		rec->size = size;
+		idx += 2;
+		rec->addr = 0;
+		switch (srec_addr_size(rec->type)) {
+		case 4:
+			addr = read_u8(text + idx);
+			if (addr < 0) goto error_not_hex;
+			rec->addr |= addr << 24;
+			idx += 2;
+			/* FALLTHROUGH */
+		case 3:
+			addr = read_u8(text + idx);
+			if (addr < 0) goto error_not_hex;
+			rec->addr |= addr << 16;
+			idx += 2;
+			/* FALLTHROUGH */
+		case 2:
+			addr = read_u8(text + idx);
+			if (addr < 0) goto error_not_hex;
+			rec->addr |= addr << 8;
+			idx += 2;
+			addr = read_u8(text + idx);
+			if (addr < 0) goto error_not_hex;
+			rec->addr |= addr;
+			idx += 2;
+			break;
+		}
+	}
+	/* Read data field: */
+	{
+		IHR_U8 i;
+		const char *hex;
+		switch (rec->type) {
+		case IHRR_S0_HEADER:
+		case IHRR_S1_DATA_16:
+		case IHRR_S2_DATA_24:
+		case IHRR_S3_DATA_32:
+			if (len < idx + ((size_t)rec->size + 1) * 2)
+				goto error_invalid_size;
+			hex = text + idx;
+			for (i = 0; i < rec->size; ++i) {
+				const char *pair = hex + i * 2;
+				int byte = read_u8(pair);
+				if (byte < 0) {
+					rec->type = invalid_hex_error(pair);
+					idx += i * 2;
+					goto error;
+				}
+				rec->data.data[i] = byte;
+			}
+			idx += (size_t)i * 2;
+			break;
+		default:
+			if (rec->size != 0) goto error_invalid_size;
+			break;
+		}
+	}
+	/* Read in the checksum (verification comes later): */
+	if ((read_cksum = read_u8(text + idx)) < 0) {
+		rec->type = invalid_hex_error(text + idx);
+		goto error;
+	} else {
+		idx += 2;
+	}
+	/* Make sure we've reached the end of the line/record: */
+	if (idx < len) {
+		switch (text[idx]) {
+		case '\n':
+			break;
+		case '\r':
+			++idx;
+			if (idx >= len || text[idx] != '\n') {
+				--idx;
+				goto error_expected_eol;
+			}
+			break;
+		default:
+			if (rec->size < IHR_MAX_SIZE)
+				goto error_invalid_size;
+			else
+				goto error_expected_eol;
+		}
+		++idx;
+	}
+	/* Verify checksum: */
+	{
+		/* The checksum is the one's complement of the least significant
+		 * byte of the sum of all preceding bytes (not the type.) */
+		IHR_U8 right_cksum = 0;
+		IHR_U32 addr = rec->addr;
+		IHR_U8 i;
+		right_cksum += rec->size;
+		for (i = srec_addr_size(rec->type); i > 0; --i) {
+			right_cksum += addr & 0xFF;
+			addr >>= 8;
+		}
+		for (i = 0; i < rec->size; ++i) {
+			right_cksum += rec->data.data[i];
+		}
+		right_cksum = ~right_cksum & 0xFF;
+		if ((IHR_U8)read_cksum != right_cksum) {
+			rec->type = -IHRE_INVALID_CHECKSUM;
+			goto error;
+		}
+	}
+	/* Transfer data from rec->addr to record-type-specific fields: */
+	{
+		switch (rec->type) {
+		case IHRR_S0_HEADER:
+		case IHRR_S1_DATA_16:
+		case IHRR_S2_DATA_24:
+		case IHRR_S3_DATA_32:
+			break;
+		case IHRR_S5_COUNT_16:
+		case IHRR_S6_COUNT_24:
+			rec->data.srec.count = rec->addr;
+			break;
+		case IHRR_S7_START_32:
+		case IHRR_S8_START_24:
+		case IHRR_S9_START_16:
+			rec->data.srec.start = rec->addr;
+			break;
+		}
+	}
+	return idx;
+
+error_invalid_size:
+	/* The reported size of the record was incorrect. */
+	rec->type = -IHRE_INVALID_SIZE;
+	return ~1;
+
+error_not_hex:
+	/* A character which should have been a hex digit was not. */
+	rec->type = -IHRE_NOT_HEX;
+	return ~idx;
+
+error_expected_eol:
+	/* The record should have been ended by a line break already. */
+	rec->type = -IHRE_EXPECTED_EOL;
+	return ~idx;
+
+error:
+	/* Any other error. */
+	return ~idx;
 }
 
 int ihr_read(int file_type,
