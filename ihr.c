@@ -269,6 +269,7 @@ int srec_read(int file_type,
 	struct ihr_record *rec)
 {
 	size_t idx = 0;
+	int addr_size;
 	int read_cksum;
 	/* Check that the given text can be a valid record: */
 	if (len < IHR_S_MIN_LENGTH) {
@@ -292,13 +293,16 @@ int srec_read(int file_type,
 			rec->type = -IHRE_INVALID_TYPE;
 			goto error;
 		}
+		addr_size = srec_addr_size(rec->type);
 		idx += 1;
 		size = read_u8(text + idx);
 		if (size < 0) goto error_not_hex;
+		size -= addr_size + 1;
+		if (size < 0) goto error_invalid_size;
 		rec->size = size;
 		idx += 2;
 		rec->addr = 0;
-		switch (srec_addr_size(rec->type)) {
+		switch (addr_size) {
 		case 4:
 			addr = read_u8(text + idx);
 			if (addr < 0) goto error_not_hex;
@@ -386,8 +390,8 @@ int srec_read(int file_type,
 		IHR_U8 right_cksum = 0;
 		IHR_U32 addr = rec->addr;
 		IHR_U8 i;
-		right_cksum += rec->size;
-		for (i = srec_addr_size(rec->type); i > 0; --i) {
+		right_cksum += rec->size + addr_size + 1;
+		for (i = 0; i < addr_size; ++i) {
 			right_cksum += addr & 0xFF;
 			addr >>= 8;
 		}
