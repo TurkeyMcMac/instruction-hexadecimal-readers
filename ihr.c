@@ -40,7 +40,6 @@ static int srec_valid_type(int file_type, IHR_U8 type)
 	switch (type) {
 	case IHRR_S0_HEADER:
 	case IHRR_S5_COUNT_16:
-	case IHRR_S6_COUNT_24:
 		return 1;
 	case IHRR_S1_DATA_16:
 	case IHRR_S9_START_16:
@@ -51,6 +50,8 @@ static int srec_valid_type(int file_type, IHR_U8 type)
 	case IHRR_S3_DATA_32:
 	case IHRR_S7_START_32:
 		return file_type == IHRT_S37;
+	case IHRR_S6_COUNT_24:
+		return file_type != IHRT_S19;
 	default:
 		return 0;
 	}
