@@ -197,7 +197,7 @@ static int ihex_read(int file_type,
 	} else {
 		idx += 2;
 	}
-	if (!find_line_end(text, len, &idx, rec)) goto error;
+	if (find_line_end(text, len, &idx, rec)) goto error;
 	/* Verify checksum: */
 	{
 		/* The checksum is the two's complement of the least significant
@@ -348,7 +348,7 @@ int srec_read(int file_type,
 	} else {
 		idx += 2;
 	}
-	if (!find_line_end(text, len, &idx, rec)) goto error;
+	if (find_line_end(text, len, &idx, rec)) goto error;
 	/* Verify checksum: */
 	{
 		/* The checksum is the one's complement of the least significant
