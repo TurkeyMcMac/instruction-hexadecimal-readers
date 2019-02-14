@@ -1,5 +1,8 @@
 #include "ihr.h"
 
+#define SUCCESS 0
+#define FAILURE -1
+
 /* Convert a hex digit to its integer form, or -1 if the given is not hex.
  * TODO: Do we need to accept lowercase hex? */
 static int read_nibble(char hex)
@@ -7,7 +10,7 @@ static int read_nibble(char hex)
 	if ('0' <= hex && hex <= '9') return hex - '0';
 	hex |= 0x20; /* Normalize to lowercase */
 	if ('a' <= hex && hex <= 'f') return 10 + hex - 'a';
-	return -1;
+	return FAILURE;
 }
 
 /* Convert two hex digits to an unsigned byte, or -1 if a digit was invalid. */
@@ -90,16 +93,16 @@ static int find_line_end(const char *text,
 				rec->type = -IHRE_INVALID_SIZE;
 			else
 				rec->type = -IHRE_EXPECTED_EOL;
-			return 0;
+			return FAILURE;
 		}
 		++*idx;
 	}
-	return 1;
+	return SUCCESS;
 }
 
 static int read_data(const char *text, size_t *idx, struct ihr_record *rec)
 {
-	int status = 0; /* Success */
+	int status = SUCCESS;
 	const char *hex = text + *idx;
 	IHR_U8 i;
 	for (i = 0; i < rec->size; ++i) {
@@ -107,7 +110,7 @@ static int read_data(const char *text, size_t *idx, struct ihr_record *rec)
 		int byte = read_u8(pair);
 		if (byte < 0) {
 			rec->type = invalid_hex_error(pair);
-			status = -1; /* Failure */
+			status = FAILURE;
 			goto finish;
 		}
 		rec->data.data[i] = byte;
@@ -400,5 +403,5 @@ int ihr_read(int file_type,
 	case IHRT_S37:
 		return srec_read(file_type, len, text, rec);
 	}
-	return -1; /* It is undefined behavior to reach here. */
+	return FAILURE; /* It is undefined behavior to reach here. */
 }
