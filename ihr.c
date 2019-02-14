@@ -111,11 +111,10 @@ static int read_data(const char *text, size_t *idx, struct ihr_record *rec)
 		if (byte < 0) {
 			rec->type = invalid_hex_error(pair);
 			status = FAILURE;
-			goto finish;
+			break;
 		}
 		rec->data.data[i] = byte;
 	}
-finish:
 	*idx += (size_t)i * 2;
 	return status;
 }
